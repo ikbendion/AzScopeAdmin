@@ -1,6 +1,5 @@
 # AzScopeAdmin
 
-## Overview
 AzScopeAdmin is a PowerShell script for managing Azure service principals and assigning Microsoft Graph scopes. since its _still_ not easy in 2025!
 
 ## Prerequisites
