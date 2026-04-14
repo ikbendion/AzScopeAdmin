@@ -1,6 +1,12 @@
 name: Release
 
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g. 1.2.3 or v1.2.3)'
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -30,13 +36,14 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Sync package.json version to tag
+      - name: Sync package.json version to input
         working-directory: desktop
         shell: bash
         run: |
-          # Strip the leading 'v' so v1.2.3 → 1.2.3
-          TAG="${GITHUB_REF_NAME#v}"
-          npm version "$TAG" --no-git-tag-version
+          # Strip leading 'v' if the user included it (v1.2.3 → 1.2.3)
+          VERSION="${{ github.event.inputs.version }}"
+          VERSION="${VERSION#v}"
+          npm version "$VERSION" --no-git-tag-version
 
       - name: Install dependencies
         working-directory: desktop
@@ -52,8 +59,9 @@ jobs:
       - name: Upload artifacts to GitHub Release
         uses: ncipollo/release-action@v1
         with:
+          tag: v${{ github.event.inputs.version }}
           artifacts: ${{ matrix.artifact_glob }}
           allowUpdates: true   # all 3 jobs safely upload to the same release
           omitBody: true       # don't overwrite release notes if already set
-          prerelease: ${{ contains(github.ref_name, '-') }}
+          prerelease: ${{ contains(github.event.inputs.version, '-') }}
           token: ${{ secrets.GITHUB_TOKEN }}
