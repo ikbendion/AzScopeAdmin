@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; style-src 'self' 'unsafe-inline';" />
+  <title>AzScopeAdmin</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ── Header ── -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand">
+        <div class="brand-icon">Az</div>
+        AzScopeAdmin
+      </div>
+      <div id="user-area" class="user-area hidden">
+        <span id="user-name" class="user-name"></span>
+        <button id="sign-out-btn" class="btn btn-ghost">Sign out</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main">
+
+    <!-- Setup (first run) -->
+    <div id="page-setup" class="page">
+      <div class="signin-wrap">
+        <div class="signin-card">
+          <div class="signin-logo">Az</div>
+          <h1>One-time setup</h1>
+          <p>Register a free Azure AD app (2 min), then paste the IDs here. You only do this once.</p>
+
+          <div class="setup-steps">
+            <ol>
+              <li>Open <a id="portal-link" href="#" class="link">Azure Portal → App registrations</a></li>
+              <li>Click <strong>New registration</strong></li>
+              <li>Name it anything, keep defaults, click <strong>Register</strong></li>
+              <li>Under <strong>Authentication</strong>, add a <em>Mobile and desktop</em> redirect URI:<br>
+                <code>http://localhost</code></li>
+              <li>Paste the IDs below</li>
+            </ol>
+          </div>
+
+          <div class="form-field">
+            <label for="input-client-id">Application (client) ID</label>
+            <input id="input-client-id" type="text" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                   spellcheck="false" autocomplete="off" />
+          </div>
+          <div class="form-field">
+            <label for="input-tenant-id">Directory (tenant) ID</label>
+            <input id="input-tenant-id" type="text" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                   spellcheck="false" autocomplete="off" />
+          </div>
+
+          <button id="save-config-btn" class="btn btn-primary btn-full" style="margin-top:16px">
+            Save & continue
+          </button>
+          <p id="setup-error" class="error-msg hidden"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sign In -->
+    <div id="page-signin" class="page">
+      <div class="signin-wrap">
+        <div class="signin-card">
+          <div class="signin-logo">Az</div>
+          <h1>AzScopeAdmin</h1>
+          <p>Assign Microsoft Graph API permissions to Azure service principals — without fighting the portal.</p>
+          <button id="sign-in-btn" class="btn ms-btn">
+            <svg width="21" height="21" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <rect x="1"  y="1"  width="9" height="9" fill="#f25022"/>
+              <rect x="11" y="1"  width="9" height="9" fill="#7fba00"/>
+              <rect x="1"  y="11" width="9" height="9" fill="#00a4ef"/>
+              <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+            </svg>
+            Sign in with Microsoft
+          </button>
+          <button id="reconfigure-btn" class="btn btn-ghost-dark" style="margin-top:10px;width:100%">
+            Change app registration
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search -->
+    <div id="page-search" class="page">
+      <div class="page-title">
+        <h2>Select a Service Principal</h2>
+        <p>Search by display name to find the identity you want to configure.</p>
+      </div>
+
+      <div class="search-wrap">
+        <svg class="search-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5"/>
+          <line x1="10.5" y1="10.5" x2="14.5" y2="14.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <input id="search-input" type="text" placeholder="Search service principals…"
+               autocomplete="off" spellcheck="false" />
+        <div id="search-spinner" class="search-spinner"></div>
+      </div>
+
+      <div id="search-results" role="list"></div>
+      <p id="search-hint" class="hint">Type at least 2 characters to search</p>
+    </div>
+
+    <!-- Assign Scopes -->
+    <div id="page-scopes" class="page">
+      <div class="nav-row">
+        <button id="back-to-search" class="btn btn-ghost-dark">
+          <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.5"
+                  stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Back to search
+        </button>
+      </div>
+
+      <div class="sp-header">
+        <div class="sp-avatar" id="sp-avatar"></div>
+        <div class="sp-meta">
+          <h3 id="sp-name"></h3>
+          <code id="sp-id"></code>
+        </div>
+      </div>
+
+      <div class="scope-field">
+        <label class="field-label" for="scope-input">Add Graph application permission</label>
+        <div class="scope-row">
+          <input id="scope-input" type="text"
+                 placeholder="e.g. User.Read.All, Mail.Send, Sites.ReadWrite.All"
+                 list="scope-suggestions" autocomplete="off" spellcheck="false" />
+          <datalist id="scope-suggestions"></datalist>
+          <button id="add-scope-btn" class="btn btn-primary">Add</button>
+        </div>
+        <p class="hint">Start typing to autocomplete from available permissions.</p>
+      </div>
+
+      <div id="scope-queue"></div>
+
+      <button id="assign-btn" class="btn btn-primary btn-full" disabled>
+        Assign Permissions
+      </button>
+    </div>
+
+    <!-- Results -->
+    <div id="page-results" class="page">
+      <div class="results-hero">
+        <div class="results-icon" id="results-icon"></div>
+        <h2>Assignment complete</h2>
+        <p id="results-summary"></p>
+      </div>
+
+      <ul id="results-breakdown" class="results-breakdown"></ul>
+
+      <hr class="divider" />
+
+      <div class="results-actions">
+        <button id="open-portal-btn" class="btn btn-secondary">Open in Azure Portal</button>
+        <button id="new-assignment-btn" class="btn btn-primary">New assignment</button>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

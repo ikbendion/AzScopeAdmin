@@ -1,0 +1,44 @@
+{
+  "name": "azscopeadmin",
+  "version": "0.2.0",
+  "description": "Assign Microsoft Graph API permissions to Azure service principals",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:win": "electron-builder --win",
+    "build:linux": "electron-builder --linux",
+    "build:mac": "electron-builder --mac"
+  },
+  "dependencies": {
+    "@azure/msal-node": "^2.16.2"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "com.azscopeadmin.app",
+    "productName": "AzScopeAdmin",
+    "publish": "never",
+    "directories": {
+      "output": "dist"
+    },
+    "files": ["main.js", "preload.js", "renderer/**/*"],
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "icon": "assets/icon.ico"
+    },
+    "linux": {
+      "target": [{ "target": "AppImage", "arch": ["x64"] }],
+      "icon": "assets/icon.png"
+    },
+    "mac": {
+      "target": [{ "target": "dmg", "arch": ["x64", "arm64"] }],
+      "icon": "assets/icon.icns"
+    },
+    "nsis": {
+      "oneClick": true,
+      "deleteAppDataOnUninstall": false
+    }
+  }
+}

@@ -1,0 +1,62 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false   # a macOS Gatekeeper issue won't block the Windows/Linux artifacts
+      matrix:
+        include:
+          - os: ubuntu-latest
+            build_cmd: build:linux
+            artifact_glob: desktop/dist/*.AppImage
+          - os: windows-latest
+            build_cmd: build:win
+            artifact_glob: desktop/dist/*.exe
+          - os: macos-latest
+            build_cmd: build:mac
+            artifact_glob: desktop/dist/*.dmg
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Sync package.json version to tag
+        working-directory: desktop
+        shell: bash
+        run: |
+          # Strip the leading 'v' so v1.2.3 → 1.2.3
+          TAG="${GITHUB_REF_NAME#v}"
+          npm version "$TAG" --no-git-tag-version
+
+      - name: Install dependencies
+        working-directory: desktop
+        run: npm install
+
+      - name: Build
+        working-directory: desktop
+        run: npm run ${{ matrix.build_cmd }}
+
+      # macOS builds are unsigned — users will see a Gatekeeper warning and
+      # must right-click > Open on first launch. To enable notarization later,
+      # add APPLE_ID / APPLE_APP_SPECIFIC_PASSWORD / APPLE_TEAM_ID secrets.
+      - name: Upload artifacts to GitHub Release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: ${{ matrix.artifact_glob }}
+          allowUpdates: true   # all 3 jobs safely upload to the same release
+          omitBody: true       # don't overwrite release notes if already set
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          token: ${{ secrets.GITHUB_TOKEN }}
